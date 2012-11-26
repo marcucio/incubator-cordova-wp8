@@ -341,8 +341,16 @@ namespace WPCordovaClassLib
             {
                 try
                 {
-                    CordovaBrowser.InvokeScript("CordovaCommandResult", new string[] { "backbutton" });
-                    e.Cancel = true;
+                    //--this is a hack so that we can exit the app if necessary
+                    Object val = CordovaBrowser.InvokeScript("eval", "do_hardware_back_button()");
+                    if (val.Equals("1"))
+                        e.Cancel = true;
+                    //--
+
+                    //-- old cordova code
+                    // CordovaBrowser.InvokeScript("CordovaCommandResult", new string[] { "backbutton" });
+                    // e.Cancel = true;
+                    //--
                 }
                 catch (Exception ex)
                 {
