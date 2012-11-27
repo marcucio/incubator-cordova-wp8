@@ -10,6 +10,8 @@ using System;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Windows;
+using System.Collections.Generic;
+using SQLite;
 using Microsoft.Phone.Controls;
 using Microsoft.Phone.Shell;
 using System.Collections.ObjectModel;
@@ -27,55 +29,6 @@ namespace Cordova.Extension.Commands
 
         #region SQLitePlugin options
 
-        /// <summary>
-        /// Represents SQLitePlugin options
-        /// </summary>
-        [DataContract]
-        public class SQLitePluginOptions
-        {
-            /// <summary>
-            /// Tile title
-            /// </summary>
-            [DataMember(IsRequired=false, Name="title")]
-            public string Title { get; set; }
-
-            /// <summary>
-            /// Tile count
-            /// </summary>
-            [DataMember(IsRequired = false, Name = "count")]
-            public int Count { get; set; }
-
-            /// <summary>
-            /// Tile image
-            /// </summary>
-            [DataMember(IsRequired = false, Name = "image")]
-            public string Image { get; set; }
-
-            /// <summary>
-            /// Back tile title
-            /// </summary>
-            [DataMember(IsRequired = false, Name = "backTitle")]
-            public string BackTitle { get; set; }
-
-            /// <summary>
-            /// Back tile content
-            /// </summary>
-            [DataMember(IsRequired = false, Name = "backContent")]
-            public string BackContent { get; set; }
-
-            /// <summary>
-            /// Back tile image
-            /// </summary>
-            [DataMember(IsRequired = false, Name = "backImage")]
-            public string BackImage { get; set; }
-
-            /// <summary>
-            /// Identifier for second tile
-            /// </summary>
-            [DataMember(IsRequired = false, Name = "secondaryTileUri")]
-            public string SecondaryTileUri { get; set; }
-
-        }
         [DataContract]
         public class SQLitePluginOpenCloseOptions
         {
@@ -124,8 +77,8 @@ namespace Cordova.Extension.Commands
             public string[] query_params { get; set; }
 
         }
-        #endregion
 
+        #endregion
         public void open(string options)
         {
             SQLitePluginOpenCloseOptions dbOptions;
@@ -158,6 +111,7 @@ namespace Cordova.Extension.Commands
         }
         public void executeSqlBatch(string options)
         {
+            string options2 = "[{\"trans_id\":\"1353570356172000\",\"query_id\":\"1353570356229000\",\"query\":\"CREATE TABLE IF NOT EXISTS sql_test2 (test_id TEXT NOT NULL, test_name TEXT NOT NULL);\",\"params\":[]},{\"trans_id\":\"1353570356172000\",\"query_id\":\"1353570356265000\",\"query\":\"INSERT INTO sql_test2 (test_id, test_name) VALUES (?, ?);\",\"params\":[\"1\",\"Hi 1\"]},{\"trans_id\":\"1353570356172000\",\"query_id\":\"1353570356348000\",\"query\":\"INSERT INTO sql_test2 (test_id, test_name) VALUES (?, ?);\",\"params\":[\"2\",\"Hi 2\"]},{\"trans_id\":\"1353570356172000\",\"query_id\":\"1353570356388000\",\"query\":\"SELECT * FROM sql_test2;\",\"params\":[]}]";
             TransactionsCollection transactions;
             try
             {
@@ -168,14 +122,37 @@ namespace Cordova.Extension.Commands
                 DispatchCommandResult(new PluginResult(PluginResult.Status.JSON_EXCEPTION));
                 return;
             }
+           var db = new SQLiteConnection("foofoo");
 
-            foreach (SQLitePluginTransaction transaction in transactions)
-            {
-                System.Diagnostics.Debug.WriteLine(transaction.query);
-            }
 
+           db.RunInTransaction(() =>
+           {
+               foreach (SQLitePluginTransaction transaction in transactions)
+               {
+                   int first = transaction.query.IndexOf("SELECT");
+                   if (first == -1)
+                   {
+                       var results = db.Execute(transaction.query, transaction.query_params);
+                       //TODO call the callback function if there is a query_id
+                   }
+                   else
+                   {
+                        var results = db.Query2(transaction.query, transaction.query_params);
+
+                        System.Diagnostics.Debug.WriteLine("SQLitePlugin result:" + JsonHelper.Serialize(results));
+                        foreach (var result in results)
+                        {
+                            System.Diagnostics.Debug.WriteLine("SQLitePlugin result:::" + JsonHelper.Serialize(result));
+                        }
+                        //TODO send data to the callback function if there is a query_id
+                   }
+               }
+            });
+
+            db.Close();
             System.Diagnostics.Debug.WriteLine("SQLitePlugin.executeSqlBatch()");
             DispatchCommandResult(new PluginResult(PluginResult.Status.OK));
+            //TODO send success callback for the transaction
         }
     }
 }

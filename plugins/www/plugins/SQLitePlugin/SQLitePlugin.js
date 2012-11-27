@@ -212,13 +212,13 @@
         return error(txself, res);
       };
     }
-    transaction_callback_queue[this.trans_id]["success"] = successcb;
-    transaction_callback_queue[this.trans_id]["error"] = errorcb;
+    //transaction_callback_queue[this.trans_id]["success"] = successcb;
+    //transaction_callback_queue[this.trans_id]["error"] = errorcb;
     console.log('query:'+JSON.stringify(transaction_queue[this.trans_id]));
-    return cdv.exec(null, null, "SQLitePlugin", "executeSqlBatch", 
-    [{trans_id:"1353564660850001",query_id:"1353564660916000",query:"CREATE TABLE IF NOT EXISTS sql_test (test_id TEXT NOT NULL, test_name TEXT NOT NULL);",params:[]}]
-);
-    //return cdv.exec(null, null, "SQLitePlugin", "executeSqlBatch", transaction_queue[this.trans_id]);
+    //return cdv.exec(null, null, "SQLitePlugin", "executeSqlBatch", 
+    //[{trans_id:"1353564660850001",query_id:"1353564660916000",query:"CREATE TABLE IF NOT EXISTS sql_test (test_id TEXT NOT NULL, test_name TEXT NOT NULL);",params:[]}]
+//);
+    return cdv.exec(errorcb, successcb, "SQLitePlugin", "executeSqlBatch", transaction_queue[this.trans_id]);
   };
   root.SQLitePluginTransaction = SQLitePluginTransaction;
   return root.sqlitePlugin = {
