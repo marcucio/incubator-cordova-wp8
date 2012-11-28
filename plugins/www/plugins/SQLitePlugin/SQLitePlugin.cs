@@ -56,13 +56,13 @@ namespace Cordova.Extension.Commands
             /// Identifier for transaction
             /// </summary>
             [DataMember(IsRequired = true, Name = "trans_id")]
-            public string trans_id { get; set; }
+            public string transId { get; set; }
 
             /// <summary>
             /// Identifier for transaction
             /// </summary>
             [DataMember(IsRequired = true, Name = "query_id")]
-            public string query_id { get; set; }
+            public string queryId { get; set; }
 
             /// <summary>
             /// Identifier for transaction
@@ -79,11 +79,12 @@ namespace Cordova.Extension.Commands
         }
         public class SQLiteTransactionResult
         {
+            public string transId;
             public List<SQLiteQueryResult> results;
         }
         public class SQLiteQueryResult
         {
-            public string query_id;
+            public string queryId;
             public List<Dictionary<string, object>> result;
         }
         #endregion
@@ -121,12 +122,12 @@ namespace Cordova.Extension.Commands
         {
             System.Diagnostics.Debug.WriteLine("SQLitePlugin.executeSqlBatch()");
             System.Diagnostics.Debug.WriteLine("options: " + options);
-
+            List<string> opt = JsonHelper.Deserialize<List<string>>(options);
             TransactionsCollection transactions;
-            SQLiteTransactionResult transResult = new SQLiteTransactionResult(); ;
+            SQLiteTransactionResult transResult = new SQLiteTransactionResult();
             try
             {
-                transactions = JsonHelper.Deserialize<TransactionsCollection>(options.Replace("\"{", "{").Replace("}\"", "}").Replace("\\\"", "\""));
+                transactions = JsonHelper.Deserialize<TransactionsCollection>(opt[0]);
             }
             catch (Exception)
             {
@@ -141,39 +142,15 @@ namespace Cordova.Extension.Commands
            {
                foreach (SQLitePluginTransaction transaction in transactions)
                {
-                   int first = transaction.query.IndexOf("SELECT");
-                   if (first == -1)
-                   {
-                       var results = db.Execute(transaction.query, transaction.query_params);
-                       SQLiteQueryResult query_result = new SQLiteQueryResult();
-                       query_result.query_id = transaction.query_id;
-                       query_result.result = null;
-                       if (transResult.results == null)
-                           transResult.results = new List<SQLiteQueryResult>();
-                       transResult.results.Add(query_result);
-                   }
-                   else
-                   {
-                        var results = db.Query2(transaction.query, transaction.query_params);
-                       /*
-                        System.Diagnostics.Debug.WriteLine("SQLitePlugin result:" + JsonHelper.Serialize(results));
-
-                        foreach (var row in results)
-                        {
-                            foreach (var column in row)
-                            {
-                                //var obj = new Dictionary<string, object>();
-                            }
-                            //System.Diagnostics.Debug.WriteLine("SQLitePlugin result:::" + JsonHelper.Serialize(result));
-                        }
-                        */
-                       SQLiteQueryResult query_result = new SQLiteQueryResult();
-                       query_result.query_id = transaction.query_id;
-                       query_result.result = results;
-                       if(transResult.results == null)
-                           transResult.results = new List<SQLiteQueryResult>();
-                       transResult.results.Add(query_result);
-                   }
+                   transResult.transId = transaction.transId;
+                  
+                   var results = db.Query2(transaction.query, transaction.query_params);
+                   SQLiteQueryResult queryResult = new SQLiteQueryResult();
+                   queryResult.queryId = transaction.queryId;
+                   queryResult.result = results;
+                   if(transResult.results == null)
+                       transResult.results = new List<SQLiteQueryResult>();
+                   transResult.results.Add(queryResult);
                }
             });
 

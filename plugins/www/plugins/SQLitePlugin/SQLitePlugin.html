@@ -91,19 +91,24 @@
 					tx.executeSql(
 						'INSERT INTO sql_test (test_id, test_name) VALUES (?, ?);', 
 						['1', 'Hi 1'], 
-						function(){console.log('Callback 1 complete')},
+						function(){console.log('Callback 2 complete')},
 						transaction_err
 					);
 					tx.executeSql(
 						'INSERT INTO sql_test (test_id, test_name) VALUES (?, ?);', 
 						['2', 'Hi 2'], 
-						function(){console.log('Callback 1 complete')},
+						function(){console.log('Callback 3 complete')},
 						transaction_err
 					);
 					tx.executeSql(
 						'SELECT * FROM sql_test;', 
 						[], 
-						function(){console.log('Callback 1 complete')},
+						function(tx, result)
+						{
+							console.log('Callback 4 complete result:'+JSON.stringify(result))
+							console.log('Callback 4 length:'+result.rows.length)
+							console.log('Callback 4 first item:'+JSON.stringify(result.rows.item(0)))
+						},
 						transaction_err
 					);
         		}, doTestError, function()

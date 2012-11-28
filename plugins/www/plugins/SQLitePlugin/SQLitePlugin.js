@@ -64,27 +64,41 @@
     this.trans_id = get_unique_id();
     this.__completed = false;
     this.__submitted = false;
-    this.optimization_no_nested_callbacks = false;
     console.log("SQLitePluginTransaction - this.trans_id:" + this.trans_id);
     transaction_queue[this.trans_id] = [];
     transaction_callback_queue[this.trans_id] = new Object();
   };
   SQLitePluginTransaction.queryCompleteCallback = function(transId, queryId, result) {
     var query, x;
-    console.log("SQLitePluginTransaction.queryCompleteCallback");
+    console.log("SQLitePluginTransaction.queryCompleteCallback:typeof:"+ typeof transaction_queue[transId]);
     query = null;
-    for (x in transaction_queue[transId]) {
-      if (transaction_queue[transId][x]["query_id"] === queryId) {
-        query = transaction_queue[transId][x];
-        if (transaction_queue[transId].length === 1) {
-          transaction_queue[transId] = [];
-        } else {
-          transaction_queue[transId].splice(x, 1);
-        }
-        break;
+    var trans;
+    for (x in transaction_queue[transId]) 
+    {
+      	if (transaction_queue[transId][x]["query_id"] === queryId) 
+      	{
+        	query = transaction_queue[transId][x];
+        	if (transaction_queue[transId].length === 1) 
+        	{
+          		transaction_queue[transId] = [];
+        	} 
+        	else 
+        	{
+          		transaction_queue[transId].splice(x, 1);
+        	}
+        	break;
       }
     }
-    if (query && query["callback"]) return query["callback"](result);
+    if (query && query["callback"]) 
+    {
+    	console.log("SQLitePluginTransaction.queryCompleteCallback -- found callback result:"+JSON.stringify(result));
+    	return query["callback"](result);
+    }
+    else
+    {
+    	console.log("SQLitePluginTransaction.queryCompleteCallback -- NOT found:"+transId+":"+queryId);
+    }
+    
   };
   SQLitePluginTransaction.queryErrorCallback = function(transId, queryId, result) {
     var query, x;
@@ -102,7 +116,44 @@
     }
     if (query && query["err_callback"]) return query["err_callback"](result);
   };
-  SQLitePluginTransaction.txCompleteCallback = function(transId) {
+  //-- makes the reslts that come from cordova into results thar resemble the websql results
+  SQLitePluginTransaction.fixQueryResult = function(resultColumns)
+  {
+  	//make a JSON string then turn it back to an object, since we cannot have dynamic varable names I don't see any other way to do this
+	var newResults = "[";
+	var columNum = 0;
+	for(var x in resultColumns)
+	{	
+		if(newResults !== "[")
+			newResults += ",{";
+		else
+			newResults += "{";
+			
+		columNum = 0;
+		for(var y in resultColumns[x])
+		{
+			if(columNum > 0)
+				newResults += ",";
+			newResults += "\""+resultColumns[x][y].Key.replace("\"", "\\\"")+"\":\""+resultColumns[x][y].Value.replace("\"", "\\\"")+"\"";
+			columNum++;
+		}
+		newResults += "}";
+	}
+
+	newResults += "]";
+	return JSON.parse(newResults);
+  }
+  SQLitePluginTransaction.txCompleteCallback = function(result, success) {
+    var transId = result.transId;
+    var queryId = null;
+    var queryResult = null;
+    for(var x in result.results)
+    {
+		queryId = result.results[x].queryId;
+    	queryResult = result.results[x].result;
+    	SQLitePluginTransaction.queryCompleteCallback(transId, queryId, SQLitePluginTransaction.fixQueryResult(queryResult));
+    }
+    
     if (typeof transId !== "undefined") {
       if (transId && transaction_callback_queue[transId] && transaction_callback_queue[transId]["success"]) {
         return transaction_callback_queue[transId]["success"]();
@@ -127,10 +178,10 @@
     var new_query;
     new_query = new Object();
     new_query["trans_id"] = trans_id;
-    if (callback || !this.optimization_no_nested_callbacks) {
+    if (callback) {
       new_query["query_id"] = get_unique_id();
     } else {
-      if (this.optimization_no_nested_callbacks) new_query["query_id"] = "";
+      new_query["query_id"] = "";
     }
     new_query["query"] = query;
     if (params) {
@@ -140,7 +191,9 @@
     }
     new_query["callback"] = callback;
     new_query["err_callback"] = err_callback;
-    if (!transaction_queue[trans_id]) transaction_queue[trans_id] = [];
+    if (!transaction_queue[trans_id])
+    	transaction_queue[trans_id] = [];
+    
     return transaction_queue[trans_id].push(new_query);
   };
   SQLitePluginTransaction.prototype.executeSql = function(sql, values, success, error) {
@@ -181,7 +234,7 @@
       };
     }
     this.add_to_transaction(this.trans_id, sql, values, successcb, errorcb);
-    return console.log("executeSql - add_to_transaction" + sql);
+    return console.log("executeSql - add_to_transaction:" + sql);
   };
   SQLitePluginTransaction.prototype.complete = function(success, error) {
     var begin_opts, commit_opts, errorcb, executes, opts, successcb, txself;
@@ -197,32 +250,19 @@
     if (this.__submitted) throw new Error("Transaction already submitted");
     this.__submitted = true;
     txself = this;
-    successcb = function() {
-      if (transaction_queue[txself.trans_id].length > 0 && !txself.optimization_no_nested_callbacks) {
-        txself.__submitted = false;
-        return txself.complete(success, error);
-      } else {
-        this.__completed = true;
-        if (success) return success(txself);
-      }
-    };
     errorcb = function(res) {};
     if (error) {
       errorcb = function(res) {
         return error(txself, res);
       };
     }
-    var succfunc = function(result)
+    successcb = function(result)
     {
     	console.log('txCallback:'+txself.trans_id+' - ' + JSON.stringify(result));
-    	success();
+    	SQLitePluginTransaction.txCompleteCallback(result, success);
     }
     transaction_callback_queue[this.trans_id]["error"] = errorcb;
-    console.log('query:'+JSON.stringify(transaction_queue[this.trans_id]));
-    //return cdv.exec(null, null, "SQLitePlugin", "executeSqlBatch", 
-    //[{trans_id:"1353564660850001",query_id:"1353564660916000",query:"CREATE TABLE IF NOT EXISTS sql_test (test_id TEXT NOT NULL, test_name TEXT NOT NULL);",params:[]}]
-//);
-    return cdv.exec(succfunc, function(){console.log('txerror:')}, "SQLitePlugin", "executeSqlBatch", transaction_queue[this.trans_id]);
+    return cdv.exec(successcb, function(){console.log('txerror:')}, "SQLitePlugin", "executeSqlBatch", [transaction_queue[this.trans_id]]);
   };
   root.SQLitePluginTransaction = SQLitePluginTransaction;
   return root.sqlitePlugin = {
