@@ -89,13 +89,13 @@
 						transaction_err
 					);
 					tx.executeSql(
-						'INSERT INTO sql_test (test_id, test_name) VALUES ?, ?;', 
+						'INSERT INTO sql_test (test_id, test_name) VALUES (?, ?);', 
 						['1', 'Hi 1'], 
 						function(){console.log('Callback 1 complete')},
 						transaction_err
 					);
 					tx.executeSql(
-						'INSERT INTO sql_test (test_id, test_name) VALUES ?, ?;', 
+						'INSERT INTO sql_test (test_id, test_name) VALUES (?, ?);', 
 						['2', 'Hi 2'], 
 						function(){console.log('Callback 1 complete')},
 						transaction_err

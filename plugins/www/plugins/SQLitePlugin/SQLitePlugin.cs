@@ -77,7 +77,15 @@ namespace Cordova.Extension.Commands
             public string[] query_params { get; set; }
 
         }
-
+        public class SQLiteTransactionResult
+        {
+            public List<SQLiteQueryResult> results;
+        }
+        public class SQLiteQueryResult
+        {
+            public string query_id;
+            public List<Dictionary<string, object>> result;
+        }
         #endregion
         public void open(string options)
         {
@@ -111,19 +119,23 @@ namespace Cordova.Extension.Commands
         }
         public void executeSqlBatch(string options)
         {
-            string options2 = "[{\"trans_id\":\"1353570356172000\",\"query_id\":\"1353570356229000\",\"query\":\"CREATE TABLE IF NOT EXISTS sql_test2 (test_id TEXT NOT NULL, test_name TEXT NOT NULL);\",\"params\":[]},{\"trans_id\":\"1353570356172000\",\"query_id\":\"1353570356265000\",\"query\":\"INSERT INTO sql_test2 (test_id, test_name) VALUES (?, ?);\",\"params\":[\"1\",\"Hi 1\"]},{\"trans_id\":\"1353570356172000\",\"query_id\":\"1353570356348000\",\"query\":\"INSERT INTO sql_test2 (test_id, test_name) VALUES (?, ?);\",\"params\":[\"2\",\"Hi 2\"]},{\"trans_id\":\"1353570356172000\",\"query_id\":\"1353570356388000\",\"query\":\"SELECT * FROM sql_test2;\",\"params\":[]}]";
+            System.Diagnostics.Debug.WriteLine("SQLitePlugin.executeSqlBatch()");
+            System.Diagnostics.Debug.WriteLine("options: " + options);
+
             TransactionsCollection transactions;
+            SQLiteTransactionResult transResult = new SQLiteTransactionResult(); ;
             try
             {
-                transactions = JsonHelper.Deserialize<TransactionsCollection>(options2);
+                transactions = JsonHelper.Deserialize<TransactionsCollection>(options.Replace("\"{", "{").Replace("}\"", "}").Replace("\\\"", "\""));
             }
             catch (Exception)
             {
                 DispatchCommandResult(new PluginResult(PluginResult.Status.JSON_EXCEPTION));
+                //SQLitePluginTransaction.txErrorCallback(transId, error)
+                //SQLitePluginTransaction.queryErrorCallback = function(transId, queryId, result)
                 return;
             }
            var db = new SQLiteConnection("foofoo");
-
 
            db.RunInTransaction(() =>
            {
@@ -133,26 +145,40 @@ namespace Cordova.Extension.Commands
                    if (first == -1)
                    {
                        var results = db.Execute(transaction.query, transaction.query_params);
-                       //TODO call the callback function if there is a query_id
+                       SQLiteQueryResult query_result = new SQLiteQueryResult();
+                       query_result.query_id = transaction.query_id;
+                       query_result.result = null;
+                       if (transResult.results == null)
+                           transResult.results = new List<SQLiteQueryResult>();
+                       transResult.results.Add(query_result);
                    }
                    else
                    {
                         var results = db.Query2(transaction.query, transaction.query_params);
-
+                       /*
                         System.Diagnostics.Debug.WriteLine("SQLitePlugin result:" + JsonHelper.Serialize(results));
-                        foreach (var result in results)
+
+                        foreach (var row in results)
                         {
-                            System.Diagnostics.Debug.WriteLine("SQLitePlugin result:::" + JsonHelper.Serialize(result));
+                            foreach (var column in row)
+                            {
+                                //var obj = new Dictionary<string, object>();
+                            }
+                            //System.Diagnostics.Debug.WriteLine("SQLitePlugin result:::" + JsonHelper.Serialize(result));
                         }
-                        //TODO send data to the callback function if there is a query_id
+                        */
+                       SQLiteQueryResult query_result = new SQLiteQueryResult();
+                       query_result.query_id = transaction.query_id;
+                       query_result.result = results;
+                       if(transResult.results == null)
+                           transResult.results = new List<SQLiteQueryResult>();
+                       transResult.results.Add(query_result);
                    }
                }
             });
 
             db.Close();
-            System.Diagnostics.Debug.WriteLine("SQLitePlugin.executeSqlBatch()");
-            DispatchCommandResult(new PluginResult(PluginResult.Status.OK));
-            //TODO send success callback for the transaction
+            DispatchCommandResult(new PluginResult(PluginResult.Status.OK, JsonHelper.Serialize(transResult)));
         }
     }
 }
