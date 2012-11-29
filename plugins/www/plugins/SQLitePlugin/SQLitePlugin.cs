@@ -26,7 +26,6 @@ namespace Cordova.Extension.Commands
     /// </summary>
     public class SQLitePlugin : BaseCommand
     {
-
         #region SQLitePlugin options
 
         [DataContract]
@@ -88,6 +87,8 @@ namespace Cordova.Extension.Commands
             public List<Dictionary<string, object>> result;
         }
         #endregion
+        private string dbName = "";
+        //we don't actually open here, we will do this with each db transaction
         public void open(string options)
         {
             SQLitePluginOpenCloseOptions dbOptions;
@@ -107,6 +108,7 @@ namespace Cordova.Extension.Commands
                 dbName = dbOptions.DBName;
                 System.Diagnostics.Debug.WriteLine("SQLitePlugin.open():" + dbName);
                 DispatchCommandResult(new PluginResult(PluginResult.Status.OK));
+                this.dbName = dbName;
             }
             else
             {
@@ -120,8 +122,8 @@ namespace Cordova.Extension.Commands
         }
         public void executeSqlBatch(string options)
         {
-            System.Diagnostics.Debug.WriteLine("SQLitePlugin.executeSqlBatch()");
-            System.Diagnostics.Debug.WriteLine("options: " + options);
+            //System.Diagnostics.Debug.WriteLine("SQLitePlugin.executeSqlBatch()");
+            //System.Diagnostics.Debug.WriteLine("options: " + options);
             List<string> opt = JsonHelper.Deserialize<List<string>>(options);
             TransactionsCollection transactions;
             SQLiteTransactionResult transResult = new SQLiteTransactionResult();
@@ -136,10 +138,10 @@ namespace Cordova.Extension.Commands
                 //SQLitePluginTransaction.queryErrorCallback = function(transId, queryId, result)
                 return;
             }
-           var db = new SQLiteConnection("foofoo");
+            var db = new SQLiteConnection(this.dbName);
 
-           db.RunInTransaction(() =>
-           {
+            db.RunInTransaction(() =>
+            {
                foreach (SQLitePluginTransaction transaction in transactions)
                {
                    transResult.transId = transaction.transId;

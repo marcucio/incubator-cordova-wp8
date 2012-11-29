@@ -73,23 +73,26 @@
     console.log("SQLitePluginTransaction.queryCompleteCallback:typeof:"+ typeof transaction_queue[transId]);
     query = null;
     var trans;
-    for (x in transaction_queue[transId]) 
+    if(queryId)
     {
-      	if (transaction_queue[transId][x]["query_id"] === queryId) 
-      	{
-        	query = transaction_queue[transId][x];
-        	if (transaction_queue[transId].length === 1) 
-        	{
-          		transaction_queue[transId] = [];
-        	} 
-        	else 
-        	{
-          		transaction_queue[transId].splice(x, 1);
-        	}
-        	break;
-      }
-    }
-    if (query && query["callback"]) 
+	    for (x in transaction_queue[transId]) 
+	    {
+	      	if (transaction_queue[transId][x]["query_id"] === queryId) 
+	      	{
+	        	query = transaction_queue[transId][x];
+	        	if (transaction_queue[transId].length === 1) 
+	        	{
+	          		transaction_queue[transId] = [];
+	        	} 
+	        	else 
+	        	{
+	          		transaction_queue[transId].splice(x, 1);
+	        	}
+	        	break;
+	      }
+	    }
+	}
+    if (queryId && query && query["callback"]) 
     {
     	console.log("SQLitePluginTransaction.queryCompleteCallback -- found callback result:"+JSON.stringify(result));
     	return query["callback"](result);
@@ -134,7 +137,13 @@
 		{
 			if(columNum > 0)
 				newResults += ",";
-			newResults += "\""+resultColumns[x][y].Key.replace("\"", "\\\"")+"\":\""+resultColumns[x][y].Value.replace("\"", "\\\"")+"\"";
+		//console.log("typeof resultColumns[x][y].Value:"+typeof resultColumns[x][y].Value)
+			if(typeof resultColumns[x][y].Value == 'string')
+				newResults += "\""+resultColumns[x][y].Key.replace("\"", "\\\"")+"\":\""+resultColumns[x][y].Value.replace("\"", "\\\"")+"\"";
+			else
+				newResults += "\""+resultColumns[x][y].Key.replace("\"", "\\\"")+"\":\""+resultColumns[x][y].Value+"\"";
+		
+			
 			columNum++;
 		}
 		newResults += "}";
@@ -143,7 +152,9 @@
 	newResults += "]";
 	return JSON.parse(newResults);
   }
-  SQLitePluginTransaction.txCompleteCallback = function(result, success) {
+  SQLitePluginTransaction.txCompleteCallback = function(result, success) 
+  {
+  	console.log("SQLitePluginTransaction.txCompleteCallback");
     var transId = result.transId;
     var queryId = null;
     var queryResult = null;
@@ -154,13 +165,27 @@
     	SQLitePluginTransaction.queryCompleteCallback(transId, queryId, SQLitePluginTransaction.fixQueryResult(queryResult));
     }
     
+    if(success)
+    {
+    	return success();
+    }
+    /*
     if (typeof transId !== "undefined") {
-      if (transId && transaction_callback_queue[transId] && transaction_callback_queue[transId]["success"]) {
-        return transaction_callback_queue[transId]["success"]();
+      if (transId && success)//transaction_callback_queue[transId] && transaction_callback_queue[transId]["success"]) 
+      {
+      	console.log("SQLitePluginTransaction.txCompleteCallback---transId = returning");
+        return success();
       }
-    } else {
+      else
+      {
+      	console.log("SQLitePluginTransaction.txCompleteCallback---transId = ??????"+transId+":"+JSON.stringify(transaction_callback_queue[transId]));
+      }
+    } 
+    else 
+    {
       return console.log("SQLitePluginTransaction.txCompleteCallback---transId = NULL");
     }
+    */
   };
   SQLitePluginTransaction.txErrorCallback = function(transId, error) {
     if (typeof transId !== "undefined") {
