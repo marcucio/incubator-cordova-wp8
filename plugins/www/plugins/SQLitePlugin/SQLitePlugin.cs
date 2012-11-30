@@ -18,6 +18,7 @@ using System.Collections.ObjectModel;
 using WPCordovaClassLib.Cordova;
 using WPCordovaClassLib.Cordova.Commands;
 using WPCordovaClassLib.Cordova.JSON;
+using System.Text.RegularExpressions;
 
 namespace Cordova.Extension.Commands
 {
@@ -145,12 +146,12 @@ namespace Cordova.Extension.Commands
                     {
                         transResult.transId = transaction.transId;
                         System.Diagnostics.Debug.WriteLine("queryId: " + transaction.queryId + " transId: " + transaction.transId + " query: " + transaction.query);
-                        int first = transaction.query.IndexOf("DROP TABLE");
+                        int first = transaction.query.IndexOf("DROP TABLE", StringComparison.OrdinalIgnoreCase);
                         if (first != -1)
                         {
-                            //-- bug wher drop tabe does not work
-                            transaction.query = transaction.query.Replace("DROP TABLE IF EXISTS", "DELETE FROM");
-                            transaction.query = transaction.query.Replace("DROP TABLE", "DELETE FROM");
+                            //-- bug where drop tabe does not work
+                            transaction.query = Regex.Replace(transaction.query, "DROP TABLE IF EXISTS", "DELETE FROM", RegexOptions.IgnoreCase);
+                            transaction.query = Regex.Replace(transaction.query, "DROP TABLE", "DELETE FROM", RegexOptions.IgnoreCase);
                             //--
                             var results = db.Execute(transaction.query, transaction.query_params);
                             //TODO call the callback function if there is a query_id
