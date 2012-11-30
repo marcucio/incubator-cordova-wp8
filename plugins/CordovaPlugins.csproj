@@ -129,6 +129,7 @@
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="www\plugins\OpenBrowser\OpenBrowserCommand.cs" />
     <Compile Include="www\plugins\SQLitePlugin\SQLite.cs" />
     <Compile Include="www\plugins\SQLitePlugin\SQLiteAsync.cs" />
     <Compile Include="www\plugins\ChildBrowser\ChildBrowserCommand.cs" />
@@ -170,6 +171,8 @@
     <Content Include="www\plugins\LiveTiles\liveTilesExample.html">
       <SubType>Designer</SubType>
     </Content>
+    <Content Include="www\plugins\OpenBrowser\browser.html" />
+    <Content Include="www\plugins\OpenBrowser\OpenBrowser.js" />
     <Content Include="www\plugins\PGMapLauncher\map.html" />
     <Content Include="www\plugins\PGMapLauncher\PGMapLauncher.js" />
     <Content Include="www\plugins\PGSocialShare\PGSocialShare.js" />

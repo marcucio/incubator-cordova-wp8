@@ -111,7 +111,6 @@ namespace Cordova.Extension.Commands
                 System.Diagnostics.Debug.WriteLine("SQLitePlugin.open():" + dbName);
                 DispatchCommandResult(new PluginResult(PluginResult.Status.OK));
                 this.dbName = dbName;
-                //this.db = new SQLiteConnection(this.dbName);
             }
             else
             {
@@ -124,13 +123,12 @@ namespace Cordova.Extension.Commands
             
              if (this.db != null)
                  this.db.Close();
-
+            
+            this.db = null;
             DispatchCommandResult(new PluginResult(PluginResult.Status.OK));
         }
         public void executeSqlBatch(string options)
         {
-            //System.Diagnostics.Debug.WriteLine("SQLitePlugin.executeSqlBatch()");
-            //System.Diagnostics.Debug.WriteLine("options: " + options);
             List<string> opt = JsonHelper.Deserialize<List<string>>(options);
             TransactionsCollection transactions;
             SQLiteTransactionResult transResult = new SQLiteTransactionResult();
@@ -147,23 +145,36 @@ namespace Cordova.Extension.Commands
                     {
                         transResult.transId = transaction.transId;
                         System.Diagnostics.Debug.WriteLine("queryId: " + transaction.queryId + " transId: " + transaction.transId + " query: " + transaction.query);
-                        var results = this.db.Query2(transaction.query, transaction.query_params);
-                        SQLiteQueryResult queryResult = new SQLiteQueryResult();
-                        queryResult.queryId = transaction.queryId;
-                        queryResult.result = results;
-                        if (transResult.results == null)
-                            transResult.results = new List<SQLiteQueryResult>();
-                        transResult.results.Add(queryResult);
+                        int first = transaction.query.IndexOf("DROP TABLE");
+                        if (first != -1)
+                        {
+                            var results = db.Execute(transaction.query, transaction.query_params);
+                            //TODO call the callback function if there is a query_id
+                            SQLiteQueryResult queryResult = new SQLiteQueryResult();
+                            queryResult.queryId = transaction.queryId;
+                            queryResult.result = null;
+                            if (transResult.results == null)
+                                transResult.results = new List<SQLiteQueryResult>();
+                            transResult.results.Add(queryResult);
+                        }
+                        else
+                        {
+                            var results = this.db.Query2(transaction.query, transaction.query_params);
+                            SQLiteQueryResult queryResult = new SQLiteQueryResult();
+                            queryResult.queryId = transaction.queryId;
+                            queryResult.result = results;
+                            if (transResult.results == null)
+                                transResult.results = new List<SQLiteQueryResult>();
+                            transResult.results.Add(queryResult);
+                        }
+
                     }
                 });
-                //this.db.Close();
             }
             catch (Exception e)
             {
                 System.Diagnostics.Debug.WriteLine("Error: " + e);
                 DispatchCommandResult(new PluginResult(PluginResult.Status.JSON_EXCEPTION));
-                //SQLitePluginTransaction.txErrorCallback(transId, error)
-                //SQLitePluginTransaction.queryErrorCallback = function(transId, queryId, result)
                 return;
             }
             DispatchCommandResult(new PluginResult(PluginResult.Status.OK, JsonHelper.Serialize(transResult)));

@@ -1,0 +1,27 @@
+﻿using System;
+using System.Runtime.Serialization;
+using Microsoft.Phone.Tasks;
+
+
+namespace WPCordovaClassLib.Cordova.Commands
+{
+    [DataContract]
+    public class BrowserOptions
+    {
+        [DataMember]
+        public string url;
+    }
+
+    public class OpenBrowserCommand : BaseCommand
+    {
+        public void openWebPage(string options)
+        {
+            BrowserOptions opts = JSON.JsonHelper.Deserialize<BrowserOptions>(options);
+
+            Uri loc = new Uri(opts.url);
+            WebBrowserTask webBrowserTask = new WebBrowserTask();
+            webBrowserTask.Uri = new Uri(opts.url);
+            webBrowserTask.Show();
+        }
+    }
+}
