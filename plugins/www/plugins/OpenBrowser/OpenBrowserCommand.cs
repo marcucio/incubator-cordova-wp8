@@ -6,7 +6,7 @@ using Microsoft.Phone.Tasks;
 namespace WPCordovaClassLib.Cordova.Commands
 {
     [DataContract]
-    public class BrowserOptions
+    public class OpenBrowserOptions
     {
         [DataMember]
         public string url;
@@ -16,7 +16,7 @@ namespace WPCordovaClassLib.Cordova.Commands
     {
         public void openWebPage(string options)
         {
-            BrowserOptions opts = JSON.JsonHelper.Deserialize<BrowserOptions>(options);
+            OpenBrowserOptions opts = JSON.JsonHelper.Deserialize<OpenBrowserOptions>(options);
 
             Uri loc = new Uri(opts.url);
             WebBrowserTask webBrowserTask = new WebBrowserTask();

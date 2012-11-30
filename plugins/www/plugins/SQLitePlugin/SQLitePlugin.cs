@@ -120,10 +120,10 @@ namespace Cordova.Extension.Commands
         public void close(string options)
         {
             System.Diagnostics.Debug.WriteLine("SQLitePlugin.close()");
-            
-             if (this.db != null)
-                 this.db.Close();
-            
+
+            if (this.db != null)
+                this.db.Close();
+
             this.db = null;
             DispatchCommandResult(new PluginResult(PluginResult.Status.OK));
         }
@@ -148,6 +148,10 @@ namespace Cordova.Extension.Commands
                         int first = transaction.query.IndexOf("DROP TABLE");
                         if (first != -1)
                         {
+                            //-- bug wher drop tabe does not work
+                            transaction.query = transaction.query.Replace("DROP TABLE IF EXISTS", "DELETE FROM");
+                            transaction.query = transaction.query.Replace("DROP TABLE", "DELETE FROM");
+                            //--
                             var results = db.Execute(transaction.query, transaction.query_params);
                             //TODO call the callback function if there is a query_id
                             SQLiteQueryResult queryResult = new SQLiteQueryResult();
