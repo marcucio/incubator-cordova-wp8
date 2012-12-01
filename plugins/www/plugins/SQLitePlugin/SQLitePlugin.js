@@ -148,10 +148,11 @@
 		{
 			if(columNum > 0)
 				newResults += ",";
+
 			if(typeof resultColumns[x].column[y].Value == 'string')
 				newResults += '"'+resultColumns[x].column[y].Key.replace("\"", "\\\"")+'":"'+SQLitePluginTransaction.escapeJSONVal(resultColumns[x].column[y].Value)+'"';
 			else
-				newResults += '"'+resultColumns[x].column[y].Key.replace("\"", "\\\"")+'":"'+resultColumns[x].column[y].Value+'"';
+				newResults += '"'+resultColumns[x].column[y].Key.replace("\"", "\\\"")+'":'+resultColumns[x].column[y].Value+'';
 		
 			columNum++;
 		}
@@ -291,3 +292,4 @@
     }
   };
 })();
+window.openDatabase = sqlitePlugin.openDatabase;
